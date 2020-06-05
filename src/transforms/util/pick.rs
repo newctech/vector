@@ -119,3 +119,35 @@ where
             .expect("transform candidates exausted, and no suitable transform found")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "transform candidates exausted, and no suitable transform found")]
+    fn iter_picker_empty() {
+        let picker = IterPicker::new(vec![]);
+        picker.probe_event(Event::new_empty_log());
+    }
+
+    #[test]
+    fn iter_picker_passthrough() {
+        let picker = IterPicker::new(vec![Passthrough]);
+        picker.probe_event(Event::new_empty_log());
+    }
+
+    #[test]
+    #[should_panic(expected = "test panic")]
+    fn iter_picker_panic() {
+        let picker = IterPicker::new(vec![Panic("test panic")]);
+        picker.probe_event(Event::new_empty_log());
+    }
+
+    #[test]
+    #[should_panic(expected = "transform candidates exausted, and no suitable transform found")]
+    fn iter_picker_discard() {
+        let picker = IterPicker::new(vec![Discard]);
+        picker.probe_event(Event::new_empty_log());
+    }
+}
