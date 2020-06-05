@@ -62,6 +62,7 @@ where
 }
 
 /// A passthrough transform. Passes events as-is.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Passthrough;
 
 impl Transform for Passthrough {
@@ -71,6 +72,7 @@ impl Transform for Passthrough {
 }
 
 /// A discard transform. Returns `None` for every event.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Discard;
 
 impl Transform for Discard {
@@ -80,6 +82,7 @@ impl Transform for Discard {
 }
 
 /// A panic transform. Just panics with the predefined message.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Panic(pub &'static str);
 
 impl Transform for Panic {
@@ -124,6 +127,10 @@ where
 mod tests {
     use super::*;
 
+    fn box_transform(transform: impl Transform + 'static) -> Box<dyn Transform> {
+        Box::new(transform)
+    }
+
     #[test]
     #[should_panic(expected = "transform candidates exausted, and no suitable transform found")]
     fn iter_picker_empty() {
@@ -133,21 +140,27 @@ mod tests {
 
     #[test]
     fn iter_picker_passthrough() {
-        let picker = IterPicker::new(vec![Passthrough]);
+        let picker = IterPicker::new(vec![box_transform(Passthrough)]);
         picker.probe_event(Event::new_empty_log());
     }
 
     #[test]
     #[should_panic(expected = "test panic")]
     fn iter_picker_panic() {
-        let picker = IterPicker::new(vec![Panic("test panic")]);
+        let picker = IterPicker::new(vec![box_transform(Panic("test panic"))]);
         picker.probe_event(Event::new_empty_log());
     }
 
     #[test]
     #[should_panic(expected = "transform candidates exausted, and no suitable transform found")]
     fn iter_picker_discard() {
-        let picker = IterPicker::new(vec![Discard]);
+        let picker = IterPicker::new(vec![box_transform(Discard)]);
+        picker.probe_event(Event::new_empty_log());
+    }
+
+    #[test]
+    fn iter_picker_sequence() {
+        let picker = IterPicker::new(vec![box_transform(Discard), box_transform(Passthrough)]);
         picker.probe_event(Event::new_empty_log());
     }
 }
